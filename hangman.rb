@@ -64,6 +64,7 @@ class NewGame
     else
       puts 'Sorry, the guess is incorrect.'
       puts
+			@remaining_tries -= 1
       @wrong_letters.push(guess)
     end
   end
@@ -112,7 +113,7 @@ class NewGame
 
   def save_game
     yaml = YAML.dump(self)
-    puts 'Enter the name of the file in which the hame will be saved:'
+    puts 'Name your save:'
     game_file_name = gets.chomp.downcase
     while File.exist?("#{game_file_name}.yml")
       puts 'The file already exists. Please enter another name'
@@ -135,9 +136,8 @@ class NewGame
       return
     end
     check_guess(@guess)
-    @remaining_tries -= 1
     puts "Remaining tries:#{@remaining_tries}."
-    puts "Tried letters: #{@wrong_letters.uniq.join(', ')}"
+    puts "Wrong letters: #{@wrong_letters.uniq.join(', ')}"
     puts
     play
   end
@@ -169,7 +169,7 @@ def load_game(game)
 end
 
 def show_begin_menu
-  puts "Let's play Hangman! \n(1) start a new game \n(2) load a previous game"
+  puts "Let's play Hangman! \n(1) Start new game \n(2) Load game"
   choice = gets.chomp
 
   until %w[1 2].include?(choice)
