@@ -1,4 +1,7 @@
-class Game
+require 'yaml'
+require 'pry-byebug'
+
+class NewGame
   @@words_list = File.read('word_list')
   @@words_list = @@words_list.split
 
@@ -18,26 +21,49 @@ class Game
   end
 
   def show_hidden_word
-    puts @hidden_secret_word.join
+    puts @hidden_secret_word.join(' ')
   end
 
   def make_a_guess
     puts 'Write your guess or write "save" to save the game'
-    @guess = gets.chomp
+    puts
+    @guess = gets.chomp.downcase
+    until check_if_valid_guess(@guess)
+      puts 'Invalid guess. Please enter a letter or "save" to save the game'
+      puts
+      @guess = gets.chomp.downcase
+    end
+    @guess
+  end
+
+  def check_if_valid_guess(guess)
+    if (guess.length == 1 && guess.match(/[a-z]/)) || guess == 'save'
+      if @hidden_secret_word.include?(guess) || @wrong_letters.include?(guess)
+        puts 'You already tried this letter'
+        puts
+        false
+      else
+        true
+      end
+    else
+      false
+    end
   end
 
   def check_guess(guess)
     number_of_appearances = @secret_word.count(guess)
     if number_of_appearances != 0
+      puts 'Correct'
+      puts
       while number_of_appearances.positive?
-        puts 'Correct'
         index = @secret_word.index(guess)
         @secret_word[index] = ''
-        @hidden_secret_word[index] = guess
+        @hidden_secret_word[index] = guess.clone
         number_of_appearances -= 1
       end
     else
       puts 'Sorry, the guess is incorrect.'
+      puts
       @wrong_letters.push(guess)
     end
   end
@@ -45,20 +71,31 @@ class Game
   def did_the_game_end?
     if @secret_word_copy == @hidden_secret_word
       puts 'Yay! You won!'
+      puts
       check_if_play_again
     end
 
     if @remaining_tries.zero?
       puts "You lost. The word was #{@secret_word_copy.join}."
+      puts
       check_if_play_again
     end
   end
 
   def check_if_play_again
     puts 'Do you wanna play again? y/n'
-    answer = gets.chomp
+    answer = gets.chomp.downcase
+    until %w[y n].include?(answer)
+      puts 'Please answer with y or n'
+      answer = gets.chomp.downcase
+    end
+
     if answer == 'y'
-      reset_game
+      if show_begin_menu == 1
+        reset_game
+      else
+        choose_game_to_load
+      end
     else
       puts 'Ok bye!'
     end
@@ -73,23 +110,77 @@ class Game
     play
   end
 
+  def save_game
+    yaml = YAML.dump(self)
+    puts 'Enter the name of the file in which the hame will be saved:'
+    game_file_name = gets.chomp.downcase
+    while File.exist?("#{game_file_name}.yml")
+      puts 'The file already exists. Please enter another name'
+      game_file_name = gets.chomp.downcase
+    end
+
+    game_file = File.new("#{game_file_name}.yml", 'w+')
+    game_file.write(yaml)
+    game_file.close
+    puts "Your game was saved in the '#{game_file_name}.yml' file"
+  end
+
   def play
     did_the_game_end?
     show_hidden_word
     @guess = make_a_guess
+    if @guess == 'save'
+      save_game
+      check_if_play_again
+      return
+    end
     check_guess(@guess)
     @remaining_tries -= 1
-    if did_the_game_end?
-      nil
-    else
-      puts "Remaining tries:#{@remaining_tries}."
-      puts "Tried letters: #{@wrong_letters.uniq.join(', ')}"
-      play
-    end
+    puts "Remaining tries:#{@remaining_tries}."
+    puts "Tried letters: #{@wrong_letters.uniq.join(', ')}"
+    puts
+    play
   end
 end
 
-puts "Let's play Hangman! Do you want to start a new game(1) or load a previous game(2)?"
+def choose_game_to_load
+  puts 'These are all the saved games:'
+  Dir.glob('*.{yml}').each_with_index do |file, index|
+    puts "(#{index + 1}) #{file}"
+  end
+  puts 'Choose the game you want to load'
+  chosen_game = gets.chomp.downcase
 
-choice = gets.chomp
-Game.new if choice == '1'
+  until chosen_game.match(/\d+/) && chosen_game.to_i <= Dir.glob('*.{yml}').length
+    puts 'Please choose a number corresponding to the file you want to open'
+    chosen_game = gets.chomp.downcase
+  end
+
+  Dir.glob('*.{yml}').each_with_index do |file, index|
+    load_game(file) if index + 1 == chosen_game.to_i
+  end
+end
+
+def load_game(game)
+  loaded_game = File.open(game, 'r')
+  yaml = YAML.load(loaded_game)
+  loaded_game.close
+  yaml.play
+end
+
+def show_begin_menu
+  puts "Let's play Hangman! \n(1) start a new game \n(2) load a previous game"
+  choice = gets.chomp
+
+  until %w[1 2].include?(choice)
+    puts 'Invalid input. Please enter 1 or 2'
+    choice = gets.chomp
+  end
+  choice
+end
+
+if show_begin_menu == '1'
+  NewGame.new
+else
+  choose_game_to_load
+end

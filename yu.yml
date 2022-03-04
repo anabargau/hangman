@@ -1,0 +1,32 @@
+--- !ruby/object:NewGame
+secret_word:
+- o
+- b
+- ''
+- a
+- i
+- n
+- ''
+- d
+secret_word_copy:
+- o
+- b
+- t
+- a
+- i
+- n
+- e
+- d
+hidden_secret_word:
+- _
+- _
+- t
+- _
+- _
+- _
+- e
+- _
+wrong_letters:
+- r
+remaining_tries: 7
+guess: save
