@@ -1,5 +1,4 @@
 require 'yaml'
-require 'pry-byebug'
 
 class NewGame
   @@words_list = File.read('word_list')
